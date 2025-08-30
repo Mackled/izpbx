@@ -45,13 +45,13 @@ services:
         soft: 8192
         hard: 32768
     ports:
-      - ${APP_PORT_HTTP}:80
-      - ${APP_PORT_HTTPS}:443
-      - ${APP_PORT_PJSIP}:5060/udp
-      - ${APP_PORT_SIP}:5160/udp
-      - ${APP_PORT_RTP_START}-${APP_PORT_RTP_END}:10000-20000/udp
-      - ${APP_PORT_UCP_HTTP}:8001
-      - ${APP_PORT_UCP_HTTPS}:8003
-      - ${APP_PORT_AMI}:8088
+      - ${APP_PORT_HTTP}:${APP_PORT_HTTP}
+      - ${APP_PORT_HTTPS}:${APP_PORT_HTTPS}
+      - ${APP_PORT_PJSIP}:${APP_PORT_PJSIP}/udp
+      - ${APP_PORT_SIP}:${APP_PORT_SIP}/udp
+      - ${APP_PORT_RTP_START}-${APP_PORT_RTP_END}:${APP_PORT_RTP_START}-${APP_PORT_RTP_END}/udp
+      - ${APP_PORT_UCP_HTTP}:${APP_PORT_UCP_HTTP}
+      - ${APP_PORT_UCP_HTTPS}:${APP_PORT_UCP_HTTPS}
+      - ${APP_PORT_AMI}:${APP_PORT_AMI}
     networks:
       - izpbx
