@@ -1,8 +1,19 @@
+#
+# Coolify ile %100 Uyumlu, Tek Dosyalık Ipbx Kurulumu
+#
+# Bu dosya, web trafiğini Coolify'ın reverse proxy'sine devrederek 
+# "port is already allocated" hatasını çözer ve alan adının çalışmasını sağlar.
+#
+
+# Servislerin birbirleriyle ve Coolify Proxy ile konuşacağı ağlar
 networks:
   izpbx:
     driver: bridge
+  coolify-proxy:
+    external: true
 
 services:
+  # Veritabanı Servisi (Değişiklik yok)
   db:
     image: docker.io/mariadb:10.11.11
     container_name: izpbx-db
@@ -19,6 +30,7 @@ services:
     networks:
       - izpbx
 
+  # Ipbx Ana Uygulama Servisi (Tüm sihir burada)
   izpbx:
     image: docker.io/izdock/izpbx-asterisk:20.16.20
     container_name: izpbx
@@ -33,8 +45,6 @@ services:
       - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - HTTPD_ENABLED=true
       - AST_MYSQL_SERVER=db
-    volumes:
-      - ./data/izpbx:/data
     cap_add:
       - NET_ADMIN
     security_opt:
@@ -44,5 +54,30 @@ services:
       nofile:
         soft: 8192
         hard: 32768
+        
+    # YENİ EKLENEN KISIM: COOLIFY PROXY İLE HABERLEŞME
+    # Bu etiketler sayesinde https://izpbx.harbylisans.online adresi çalışacak.
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.izpbx.rule=Host(`${SERVICE_FQDN_IZPBX}`)"
+      - "traefik.http.routers.izpbx.entrypoints=https"
+      - "traefik.http.routers.izpbx.tls=true"
+      - "traefik.http.routers.izpbx.tls.certresolver=coolify"
+      - "traefik.http.services.izpbx.loadbalancer.server.port=8080" # Konteynerin içindeki web portu
+
+    # DEĞİŞEN KISIM: PORT YÖNETİMİ
+    # HTTP/HTTPS portları artık etiketlerle yönetildiği için buradan kaldırıldı.
+    # Sadece web trafiği olmayan diğer portları açıyoruz.
+    ports:
+      - "${APP_PORT_PJSIP}:${APP_PORT_PJSIP}/udp"
+      - "${APP_PORT_SIP}:${APP_PORT_SIP}/udp"
+      - "${APP_PORT_RTP_START}-${APP_PORT_RTP_END}:${APP_PORT_RTP_START}-${APP_PORT_RTP_END}/udp"
+      - "${APP_PORT_UCP_HTTP}:${APP_PORT_UCP_HTTP}"
+      - "${APP_PORT_UCP_HTTPS}:${APP_PORT_UCP_HTTPS}"
+      - "${APP_PORT_AMI}:${APP_PORT_AMI}"
+
+    # GÜNCELLENEN KISIM: AĞ BAĞLANTILARI
+    # Hem kendi ağına hem de Coolify Proxy ağına bağlıyoruz.
     networks:
       - izpbx
+      - coolify-proxy
